@@ -1,8 +1,8 @@
-package outpost.group4;
+package outpost.group4_nov19;
 
 import java.util.*;
 
-import outpost.group4.Location;
+import outpost.group4_nov19.Location;
 import outpost.sim.Pair;
 import outpost.sim.movePair;
 
