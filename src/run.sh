@@ -10,7 +10,7 @@ GROUP0=${6:-group6}
 GROUP1=${7:-dumb}
 GROUP2=${8:-group4_nov19}
 GROUP3=${9:-group5_nov19}
-T=${10:-100}
+T=${10:-100000}
 
 javac outpost/sim/Outpost.java
 javac outpost/$GROUP0/Player.java
