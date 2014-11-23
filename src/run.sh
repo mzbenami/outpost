@@ -6,10 +6,10 @@ R=${2:-10}
 L=${3:-4}
 W=${4:-1}
 GUI=${5:-true}
-GROUP0=${6:-group6}
-GROUP1=${7:-dumb}
-GROUP2=${8:-group4_nov19}
-GROUP3=${9:-group5_nov19}
+GROUP0=${6:-michael}
+GROUP1=${7:-group6}
+GROUP2=${8:-dumb}
+GROUP3=${9:-dumb}
 T=${10:-100000}
 
 javac outpost/sim/Outpost.java
