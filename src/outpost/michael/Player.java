@@ -31,6 +31,12 @@ public class Player extends outpost.sim.Player {
 
     ArrayList<Cell> allCells;
     ArrayList<Post> ourPosts;
+    Pair[] region = new Pair[2];
+    int[] rx = {10, -10, -10, 10};
+    int[] ry = {10, 10, -10, -10};
+    int[] startx = {0, size - 1, size -1, 0};
+    int[] starty = {0, 0, size -1, size -1};
+    int moveCount = 0;
 
     boolean initDone = false;
 
@@ -91,7 +97,7 @@ public class Player extends outpost.sim.Player {
                          (a.y-b.y) * (a.y-b.y));
     }
 
-    static double manDistance(Pair a, Pair b) {
+    static int manDistance(Pair a, Pair b) {
         return Math.abs(a.x-b.x) + Math.abs(a.y-b.y);
     }
 
@@ -124,6 +130,7 @@ public class Player extends outpost.sim.Player {
     public int delete(ArrayList<ArrayList<Pair>> king_outpostlist, Point[] gridin) {
         System.out.printf("haha, we are trying to delete a outpost for player %d\n", this.id);
         int del = king_outpostlist.get(my_id).size() - 1;
+        ourPosts.remove(ourPosts.size() - 1);
         return del;
     }
 
@@ -160,7 +167,7 @@ public class Player extends outpost.sim.Player {
                 }
                 Pair pr = new Pair(x, y);
                 Point pt = PairtoPoint(pr);
-                if (!pt.water && (pt.ownerlist.size() == 0 || (pt.ownerlist.size() == 1 && pt.ownerlist.get(0).x == my_id)) && (!opponentPresence(p))) {
+                if (!pt.water /*&& (pt.ownerlist.size() == 0 || (pt.ownerlist.size() == 1 && pt.ownerlist.get(0).x == my_id)) /*&& (!opponentPresence(p))*/) {
                     vst[x][y] = true;
                     tempGrid[x][y] = Math.min(tempGrid[x][y], d+1);
                     q.add(pr);
@@ -207,7 +214,7 @@ public class Player extends outpost.sim.Player {
     }
   
     public ArrayList<movePair> move(ArrayList<ArrayList<Pair>> king_outpostlist, Point[] gridin, int r, int L, int W, int t){
-
+        moveCount++;
         this.grid = gridin;
 
         if (!initDone) {
@@ -215,12 +222,20 @@ public class Player extends outpost.sim.Player {
             initCells();
             calcCellValues(); //sort every cell on the board by their "water value", descending
             ourPosts = new ArrayList<Post>(); // a list of our Outposts that persists through "move" calls
+            region[0] = new Pair(startx[my_id], starty[my_id]);
+            region[1] = new Pair (50, 50);
 
             initDone = true;
         }
 
         refreshPosts(king_outpostlist); //allign our outpost list with the one passed in from the simulator
                                         //also sets targets for any newly created outposts, stored in Post.target
+        
+        if (moveCount % 100 == 0) {
+            region[1].x += rx[my_id];
+            region[1].y += ry[my_id];
+            refreshTargets(region[0], region[1]);         
+        }
 
         ArrayList<movePair> nextlist = new ArrayList<movePair>();
 
@@ -250,7 +265,7 @@ public class Player extends outpost.sim.Player {
             } else {
                 Post post = new Post(i);
                 post.current = ourKingList.get(i);
-                post.target = targetInRegion(new Pair(0,0), new Pair(100,100));
+                post.target = targetInRegion(region[0], region[1]);
                 ourPosts.add(post);                
             }
         }
@@ -279,6 +294,46 @@ public class Player extends outpost.sim.Player {
         }
 
         return new Pair(5,0);
+    }
+
+    void refreshTargets(Pair a, Pair b) {
+        
+        ArrayList<Post> ourPostsCopy = new ArrayList<Post>();
+        ourPostsCopy.addAll(ourPosts);
+
+        for (Cell c : allCells) {
+            if (!isInRegion(c.location, a, b))
+                continue;
+
+            int postCount = 0;
+            for (Post post : ourPosts) {
+                if (manDistance(post.target, c.location) > r) {
+                    postCount++;
+                } else {
+                    break;
+                }
+            }
+
+            if (postCount != ourPosts.size()) {
+                continue;
+            }
+
+            int bestDist = 1000;
+            Post closestPost = null;
+            for (Post post : ourPostsCopy) {
+                int d = manDistance(post.current, c.location);
+                if (d < bestDist) {
+                    bestDist = d;
+                    closestPost = post;
+                }
+            }
+            closestPost.target = c.location;
+            ourPostsCopy.remove(closestPost);
+
+            if (ourPostsCopy.size() == 0) {
+                break;
+            }      
+        }
     }
 
     /* Calculate the water value and land value for every cell */
