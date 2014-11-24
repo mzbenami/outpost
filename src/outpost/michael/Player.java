@@ -158,11 +158,12 @@ public class Player extends outpost.sim.Player {
                     System.out.printf("[Group6][LOG] Path Found\n");
                     return new Pair(p);
                 }
-                Point pt = PairtoPoint(p);
-                if (!pt.water && (pt.ownerlist.size() == 0 || (pt.ownerlist.size() == 1 && pt.ownerlist.get(0).x == my_id))) {
+                Pair pr = new Pair(x, y);
+                Point pt = PairtoPoint(pr);
+                if (!pt.water && (pt.ownerlist.size() == 0 || (pt.ownerlist.size() == 1 && pt.ownerlist.get(0).x == my_id)) && (!opponentPresence(p))) {
                     vst[x][y] = true;
                     tempGrid[x][y] = Math.min(tempGrid[x][y], d+1);
-                    q.add(new Pair(x, y));
+                    q.add(pr);
                 }
             }
         }
@@ -186,6 +187,24 @@ public class Player extends outpost.sim.Player {
 
     }
 
+    //Check for opponents presence in nearby area (8 surrounding cells)
+    public boolean opponentPresence(Pair p)
+    {
+        int[] cx = {0,0,0,0,1,-1,2,-2};
+        int[] cy = {1,-1,2,-2,0,0,0,0};
+        
+        for (int i = 0; i < 8; ++i) {
+            int x = p.x + cx[i], y = p.y + cy[i];
+            if (x < 0 || x >= size || y < 0 || y >= size) continue;
+            Pair p_new = new Pair(x,y);
+            Point pt = PairtoPoint(p_new);
+            if (pt.ownerlist.size() == 0 || (pt.ownerlist.size() == 1 && pt.ownerlist.get(0).x == my_id))
+                continue;
+            else
+                return true;             
+        }
+        return false;
+    }
   
     public ArrayList<movePair> move(ArrayList<ArrayList<Pair>> king_outpostlist, Point[] gridin, int r, int L, int W, int t){
 
@@ -231,7 +250,7 @@ public class Player extends outpost.sim.Player {
             } else {
                 Post post = new Post(i);
                 post.current = ourKingList.get(i);
-                post.target = targetInRegion(new Pair(0,0), new Pair(50,50));
+                post.target = targetInRegion(new Pair(0,0), new Pair(100,100));
                 ourPosts.add(post);                
             }
         }

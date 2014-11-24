@@ -14,7 +14,15 @@ public class Cell implements Comparable<Cell> {
 	}
 
 	public int compareTo(Cell o) {
-		return this.w_value < o.w_value ? 1 : -1;
-	}
+		
+		if (this.w_value < o.w_value) {
+			return 1;
+		}
 
+		if (this.w_value > o.w_value) {
+			return -1;
+		}
+
+		return 0;
+	}
 }
