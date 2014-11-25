@@ -12,6 +12,8 @@ public class Player extends outpost.sim.Player {
     static int size =100;
     static Point[] grid = new Point[size*size];
     int r;
+    int L;
+    int W;
     Pair[] home = new Pair[4];
     boolean [][] opponentOutpost = new boolean[size][size];
     Random random;
@@ -224,6 +226,8 @@ public class Player extends outpost.sim.Player {
             ourPosts = new ArrayList<Post>(); // a list of our Outposts that persists through "move" calls
             region[0] = new Pair(startx[my_id], starty[my_id]);
             region[1] = new Pair (50, 50);
+            this.L = L;
+            this.W = W;
 
             initDone = true;
         }
@@ -231,7 +235,7 @@ public class Player extends outpost.sim.Player {
         refreshPosts(king_outpostlist); //allign our outpost list with the one passed in from the simulator
                                         //also sets targets for any newly created outposts, stored in Post.target
         
-        if (moveCount % 100 == 0) {
+        if (moveCount % 300 == 0) {
             region[1].x += rx[my_id];
             region[1].y += ry[my_id];
             refreshTargets(region[0], region[1]);         
@@ -281,7 +285,7 @@ public class Player extends outpost.sim.Player {
 
             int postCount = 0;
             for (Post post : ourPosts) {
-                if (manDistance(post.target, c.location) > r) {
+                if (manDistance(post.target, c.location) > 2*r) {
                     postCount++;
                 } else {
                     break;
@@ -307,7 +311,7 @@ public class Player extends outpost.sim.Player {
 
             int postCount = 0;
             for (Post post : ourPosts) {
-                if (manDistance(post.target, c.location) > r) {
+                if (manDistance(post.target, c.location) > 2*r) {
                     postCount++;
                 } else {
                     break;
@@ -341,22 +345,26 @@ public class Player extends outpost.sim.Player {
         for (Cell cell : allCells) {
             Pair orig = cell.location;
 
-            ArrayList<Pair> diamond = diamondFromPair(orig, r);
-            for (Pair p : diamond) {
-                if (PairtoPoint(orig).water) {
+            if (PairtoPoint(orig).water) {
                     cell.w_value = -1;
                     cell.l_value = -1;
+                    cell.r_value = -1;
                     continue;
-                }
+            }
+
+            ArrayList<Pair> diamond = diamondFromPair(orig, r);
+            for (Pair p : diamond) {
 
                 if (PairtoPoint(p).water) {
-                    cell.w_value++; 
+                    cell.w_value += L; 
                 } else {
-                    cell.l_value++;
-                }
+                    cell.l_value += W;
+                }      
             }
+        
+        cell.r_value = Math.min(cell.w_value, cell.l_value);
+        
         }
-
         Collections.sort(allCells);
     }
 

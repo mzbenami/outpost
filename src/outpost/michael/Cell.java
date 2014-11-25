@@ -8,6 +8,7 @@ public class Cell implements Comparable<Cell> {
 	public Pair location;
 	public int w_value;
 	public int l_value;
+	public int r_value;
 
 	public Cell(Pair location) {
 		this.location = location;
@@ -15,11 +16,11 @@ public class Cell implements Comparable<Cell> {
 
 	public int compareTo(Cell o) {
 		
-		if (this.w_value < o.w_value) {
+		if (this.r_value < o.r_value) {
 			return 1;
 		}
 
-		if (this.w_value > o.w_value) {
+		if (this.r_value > o.r_value) {
 			return -1;
 		}
 
