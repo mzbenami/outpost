@@ -39,6 +39,7 @@ public class Player extends outpost.sim.Player {
     int[] startx = {0, size - 1, size -1, 0};
     int[] starty = {0, 0, size -1, size -1};
     int moveCount = 0;
+    int resizeCount = 0;
 
     boolean initDone = false;
 
@@ -221,32 +222,34 @@ public class Player extends outpost.sim.Player {
 
         if (!initDone) {
             this.r = r;
+            this.L = L;
+            this.W = W;
             initCells();
             calcCellValues(); //sort every cell on the board by their "water value", descending
             ourPosts = new ArrayList<Post>(); // a list of our Outposts that persists through "move" calls
             region[0] = new Pair(startx[my_id], starty[my_id]);
-            region[1] = new Pair (50, 50);
-            this.L = L;
-            this.W = W;
+            region[1] = new Pair (50 , 50   );
+
 
             initDone = true;
         }
 
         refreshPosts(king_outpostlist); //allign our outpost list with the one passed in from the simulator
                                         //also sets targets for any newly created outposts, stored in Post.target
+        refreshTargets(region[0], region[1]); 
         
-        if (moveCount % 300 == 0) {
-            region[1].x += rx[my_id];
-            region[1].y += ry[my_id];
-            refreshTargets(region[0], region[1]);         
-        }
+        // if (moveCount % 300 == 0) {
+        //     region[1].x += rx[my_id];
+        //     region[1].y += ry[my_id];
+        
+        // }
 
         ArrayList<movePair> nextlist = new ArrayList<movePair>();
 
         for (Post post : ourPosts) {
             Pair next = findNextMovePos(post.current, post.target);
 
-            System.out.println("DEBUG: " + post + " Next: " + next.x + "," + next.y);
+            System.out.println("[GROUP 6][LOG] " + post + " Next: " + next.x + "," + next.y);
             
             nextlist.add(new movePair(post.id, next));
         }
@@ -260,18 +263,13 @@ public class Player extends outpost.sim.Player {
     void refreshPosts(ArrayList<ArrayList<Pair>> king_outpostlist) {
         ArrayList<Pair> ourKingList = king_outpostlist.get(my_id);
              
+        ourPosts.clear();
+
         for (int i = 0; i < ourKingList.size(); i++) {
-            
-            if (i < ourPosts.size()) {
-                Post post = ourPosts.get(i);
-                post.id = i;
-                post.current = ourKingList.get(i);
-            } else {
                 Post post = new Post(i);
                 post.current = ourKingList.get(i);
-                post.target = targetInRegion(region[0], region[1]);
                 ourPosts.add(post);                
-            }
+            
         }
     }
 
@@ -297,7 +295,8 @@ public class Player extends outpost.sim.Player {
             }
         }
 
-        return new Pair(5,0);
+        int c = moveCount % 4;
+        return new Pair(startx[c], starty[c]);
     }
 
     void refreshTargets(Pair a, Pair b) {
@@ -305,13 +304,17 @@ public class Player extends outpost.sim.Player {
         ArrayList<Post> ourPostsCopy = new ArrayList<Post>();
         ourPostsCopy.addAll(ourPosts);
 
+        for (Post post : ourPostsCopy) {
+            post.targetSet = false;
+        }
+
         for (Cell c : allCells) {
             if (!isInRegion(c.location, a, b))
                 continue;
 
             int postCount = 0;
             for (Post post : ourPosts) {
-                if (manDistance(post.target, c.location) > 2*r) {
+                if (post.targetSet == false || manDistance(post.target, c.location) > 2*r) {
                     postCount++;
                 } else {
                     break;
@@ -332,16 +335,41 @@ public class Player extends outpost.sim.Player {
                 }
             }
             closestPost.target = c.location;
+            closestPost.l_value = c.l_value;
+            closestPost.w_value = c.w_value;
+            closestPost.r_value = c.r_value;
+            closestPost.targetSet = true;
             ourPostsCopy.remove(closestPost);
 
             if (ourPostsCopy.size() == 0) {
                 break;
             }      
         }
+
+        if (ourPostsCopy.size() > 0) {
+           
+            if (resizeCount < 2) {
+                region[1].x += rx[my_id];
+                region[1].y += ry[my_id];
+                refreshTargets(region[0], region[1]);
+                resizeCount++;
+            } else {
+                int count = 0;
+
+                for (Post post : ourPostsCopy) {
+                    count = count % 4;
+                    post.target = new Pair(startx[count], starty[count]);
+                    post.targetSet = true;
+                    count++;
+                }
+            }
+
+        }
     }
 
     /* Calculate the water value and land value for every cell */
     void calcCellValues() {
+
         for (Cell cell : allCells) {
             Pair orig = cell.location;
 
@@ -362,8 +390,7 @@ public class Player extends outpost.sim.Player {
                 }      
             }
         
-        cell.r_value = Math.min(cell.w_value, cell.l_value);
-        
+            cell.r_value = Math.min(cell.w_value, cell.l_value);
         }
         Collections.sort(allCells);
     }
