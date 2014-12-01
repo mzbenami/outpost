@@ -222,6 +222,8 @@ public class Player extends outpost.sim.Player {
 
     public void printOupost()
     {
+        System.out.printf("[Group6][Outpost] Total Outposts Alive: %d, Total Spawned: %d\n", ourPosts.size(), outpost_id);
+
         for(Post p: ourPosts)
         {
             System.out.printf("[Group6][Outpost] id:%d, current:(%d, %d), target: (%d, %d)\n", p.id, p.current.x, p.current.y, p.target.x, p.target.y);
@@ -229,6 +231,9 @@ public class Player extends outpost.sim.Player {
     }
   
     public ArrayList<movePair> move(ArrayList<ArrayList<Pair>> king_outpostlist, Point[] gridin, int r, int L, int W, int t){
+        System.out.printf("[Group6][START]\n");
+        long startCpuTime = getCpuTime();
+
         moveCount++;
         this.grid = gridin;
 
@@ -270,6 +275,12 @@ public class Player extends outpost.sim.Player {
             nextlist.add(new movePair(i, next));
             post.current = next;
         }
+        long endCpuTime = getCpuTime();
+
+        long timeTaken = (endCpuTime - startCpuTime)/(1000000); //ms
+        totalCpuTime += timeTaken; 
+
+        System.out.printf("[Group6][END] Cpu Time, This iteration: %d ms, Total: %d ms\n", timeTaken, totalCpuTime);
 
         return nextlist;
     
