@@ -7,8 +7,12 @@ import outpost.sim.Point;
 import outpost.sim.movePair;
 
 import java.lang.management.*;
+
  
 public class Player extends outpost.sim.Player {
+    
+
+    int outpost_id = 0;
     static int size =100;
     static Point[] grid = new Point[size*size];
     int r;
@@ -215,6 +219,14 @@ public class Player extends outpost.sim.Player {
         }
         return false;
     }
+
+    public void printOupost()
+    {
+        for(Post p: ourPosts)
+        {
+            System.out.printf("[Group6][Outpost] id:%d, current:(%d, %d), target: (%d, %d)\n", p.id, p.current.x, p.current.y, p.target.x, p.target.y);
+        }
+    }
   
     public ArrayList<movePair> move(ArrayList<ArrayList<Pair>> king_outpostlist, Point[] gridin, int r, int L, int W, int t){
         moveCount++;
@@ -237,6 +249,8 @@ public class Player extends outpost.sim.Player {
         refreshPosts(king_outpostlist); //allign our outpost list with the one passed in from the simulator
                                         //also sets targets for any newly created outposts, stored in Post.target
         refreshTargets(region[0], region[1]); 
+
+        printOupost();
         
         // if (moveCount % 300 == 0) {
         //     region[1].x += rx[my_id];
@@ -246,12 +260,14 @@ public class Player extends outpost.sim.Player {
 
         ArrayList<movePair> nextlist = new ArrayList<movePair>();
 
-        for (Post post : ourPosts) {
+        for (int i =0; i < ourPosts.size(); i++) 
+        {
+            Post post = ourPosts.get(i);
             Pair next = findNextMovePos(post.current, post.target);
 
-            System.out.println("[GROUP 6][LOG] " + post + " Next: " + next.x + "," + next.y);
+            System.out.println("[Group6][LOG] " + post + " Next: " + next.x + "," + next.y);
             
-            nextlist.add(new movePair(post.id, next));
+            nextlist.add(new movePair(i, next));
             post.current = next;
         }
 
@@ -261,36 +277,60 @@ public class Player extends outpost.sim.Player {
 
     /*allign our outpost list with the one passed in from the simulator
     also sets targets for any newly created outposts, stored in Post.target */
+
+    void printHashMap(HashMap<Tuple, ArrayList<Integer>> map)
+    {
+        System.out.printf("[refreshPosts][print] Size %d\n", map.size());
+        Iterator iterator = map.keySet().iterator();
+        while(iterator.hasNext())
+        {
+            Tuple t = (Tuple)iterator.next();
+            System.out.printf("[refreshPosts][print] Key %d, %d, %d\n", t.x, t.y, t.hashCode());
+            System.out.printf("[refreshPosts][print] Value size %d\n", map.get(t).size());
+
+        }
+    }
+
     void refreshPosts(ArrayList<ArrayList<Pair>> king_outpostlist) {
         ArrayList<Pair> ourKingList = king_outpostlist.get(my_id);
 
-        HashMap<Pair, ArrayList<Integer>> map = new HashMap<Pair, ArrayList<Integer>>();
+        HashMap<Tuple, ArrayList<Integer>> map = new HashMap<Tuple, ArrayList<Integer>>();
         ArrayList<Integer> temp;
+        Tuple key;
 
         for(Integer i = 0; i < ourPosts.size(); i++)
         {
-            map.put(ourPosts.get(i).current, new ArrayList<Integer>());
+            key = new Tuple(ourPosts.get(i).current);
+            //System.out.printf("[refreshPosts]Adding Key  %d, %d, %d\n", key.x, key.y, key.hashCode());
+            map.put(key, new ArrayList<Integer>());
+            
         }
 
         for(Integer i = 0; i < ourPosts.size(); i++)
         {
-            map.get(ourPosts.get(i).current).add(i);
+            key = new Tuple(ourPosts.get(i).current);
+            //System.out.printf("[refreshPosts]Adding value to Key  %d, %d, %d\n", key.x, key.y, key.hashCode());
+            map.get(key).add(i);
+            
         }
+        //printHashMap(map);
 
         for(Integer i = 0; i < ourKingList.size(); i++)
         {
-            temp = map.get(ourKingList.get(i));
+            key =  new Tuple(ourKingList.get(i));
+            temp = map.get(key);
 
             if(temp == null || temp.size() == 0)
             {
-                Post post = new Post();
+                //System.out.printf("[refreshPosts]Key Not present %d, %d, %d\n", key.x, key.y, key.hashCode());
+                Post post = new Post(outpost_id);
+                outpost_id++;
                 post.current = ourKingList.get(i);
-                System.out.printf("[GROUP 6][RefreshPosts] Adding new outpost at %d, %d \n", post.current.x, post.current.y);
                 ourPosts.add(post);
+                System.out.printf("[Group6][RefreshPosts] Adding new outpost[%d] at %d, %d \n", post.id, post.current.x, post.current.y);
             }
             else
             {
-                
                 temp.remove(temp.size()-1);
             }
         }
@@ -316,7 +356,7 @@ public class Player extends outpost.sim.Player {
             if(postToRemove.get(i) != null)
             {
                 Pair toRemove = ourPosts.get(i).current;
-                System.out.printf("[GROUP 6][RefreshPosts]Removing outpost at %d, %d \n", toRemove.x, toRemove.y);
+                System.out.printf("[Group6][RefreshPosts] Removing outpost[%d] at %d, %d \n",ourPosts.get(i).id, toRemove.x, toRemove.y);
             }
             else
             {
@@ -324,11 +364,6 @@ public class Player extends outpost.sim.Player {
             }
         }
     
-        for(Integer i =0; i < newPosts.size(); i++)
-        {
-            newPosts.get(i).id = i;
-        }
-
         ourPosts.clear();
         ourPosts = newPosts;
     }
