@@ -264,20 +264,20 @@ public class Player extends outpost.sim.Player {
     void refreshPosts(ArrayList<ArrayList<Pair>> king_outpostlist) {
         ArrayList<Pair> ourKingList = king_outpostlist.get(my_id);
 
-        HashMap<Pair, ArrayList<int>> map = new HashMap<Pair, ArrayList<int>>();
-        ArrayList<int> temp;
+        HashMap<Pair, ArrayList<Integer>> map = new HashMap<Pair, ArrayList<Integer>>();
+        ArrayList<Integer> temp;
 
-        for(int i = 0; i < ourPosts.size(); i++)
+        for(Integer i = 0; i < ourPosts.size(); i++)
         {
-            map.put(ourPosts.get(i).current, ArrayList<int>());
+            map.put(ourPosts.get(i).current, new ArrayList<Integer>());
         }
 
-        for(int i = 0; i < outPosts.size(); i++)
+        for(Integer i = 0; i < ourPosts.size(); i++)
         {
             map.get(ourPosts.get(i).current).add(i);
         }
 
-        for(int i = 0; i < ourKingList.size(); i++)
+        for(Integer i = 0; i < ourKingList.size(); i++)
         {
             temp = map.get(ourKingList.get(i));
 
@@ -295,7 +295,7 @@ public class Player extends outpost.sim.Player {
             }
         }
 
-        HashMap<int, boolean> postToRemove = new HashMap<int, boolean>();
+        HashMap<Integer, Boolean> postToRemove = new HashMap<Integer, Boolean>();
 
         Iterator iterator = map.keySet().iterator();
         while(iterator.hasNext())
@@ -303,33 +303,33 @@ public class Player extends outpost.sim.Player {
             temp = map.get(iterator.next());
             if(temp != null)
             {
-                for(int index:temp)
+                for(Integer index:temp)
                 {
-                    postToRemove.put(index, True);
+                    postToRemove.put(index, true);
                 }
             }
         }
 
         ArrayList<Post> newPosts = new ArrayList<Post>();
-        for(int i = 0; i < outPosts.size(); i++)
+        for(Integer i = 0; i < ourPosts.size(); i++)
         {
             if(postToRemove.get(i) != null)
             {
-                Pair toRemove = outPosts.get(i).current;
+                Pair toRemove = ourPosts.get(i).current;
                 System.out.printf("[GROUP 6][RefreshPosts]Removing outpost at %d, %d \n", toRemove.x, toRemove.y);
             }
             else
             {
-                newPosts.add(new Post(outPosts.get(i)));
+                newPosts.add(new Post(ourPosts.get(i)));
             }
         }
     
-        for(int i =0; i < newPosts.size(); i++)
+        for(Integer i =0; i < newPosts.size(); i++)
         {
             newPosts.get(i).id = i;
         }
 
-        ourPosts.clear()
+        ourPosts.clear();
         ourPosts = newPosts;
     }
 
