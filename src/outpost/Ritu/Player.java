@@ -301,33 +301,37 @@ public class Player extends outpost.sim.Player {
     }
 
     void refreshTargets(Pair a, Pair b) {
-            	
+        
         ArrayList<Post> ourPostsCopy = new ArrayList<Post>();
-        ourPostsCopy.addAll(ourPosts);
+        //ourPostsCopy.addAll(ourPosts);
+        //Make copy of all outposts except home base protecting outposts
+        //And assign home cells to certain outposts manually
+        int outpostCount = 0;
+        int homeCellCount = 0;
+        for(Post p: ourPosts)
+        {
+        	if((outpostCount >9 && outpostCount < 13))
+        	{
+        		p.target= homeCells.get(homeCellCount).location;
+        		p.targetSet=true;
+        		homeCellCount++;
+        	}
+        	else
+        	{
+        		ourPostsCopy.add(p);
+        	}
+        	outpostCount++;
+        }
 
-        int postCount = 0;
-        //int pCount = 0;
-        //int hcount = 0;
         for (Post post : ourPostsCopy) {
-        		post.targetSet = false;
-        		/*
-        		 //The 6, 7, 8th oupoststhat are created should be assigned the value of the home cells
-        		if(pCount > 5 && pCount < 9)
-	        	{
-	        		post.target = homeCells.get(hCount).location;        		
-        			post.targetSet = true;
-        			hCount++;
-	        	}
-	        	else
-	        		post.targetSet = false;
-        		 * 
-        		 */
+            post.targetSet = false;
         }
 
         for (Cell c : allCells) {
             if (!isInRegion(c.location, a, b))
                 continue;
 
+            int postCount = 0;
             for (Post post : ourPosts) {
                 if (post.targetSet == false || manDistance(post.target, c.location) > 2*r) {
                     postCount++;
@@ -343,11 +347,11 @@ public class Player extends outpost.sim.Player {
             int bestDist = 1000;
             Post closestPost = null;
             for (Post post : ourPostsCopy) {
-            	int d = manDistance(post.current, c.location);
+                int d = manDistance(post.current, c.location);
                 if (d < bestDist) {
                     bestDist = d;
                     closestPost = post;
-                }  
+                }
             }
             closestPost.target = c.location;
             closestPost.l_value = c.l_value;
@@ -370,11 +374,12 @@ public class Player extends outpost.sim.Player {
                 resizeCount++;
             } else {
                 int count = 0;
+
                 for (Post post : ourPostsCopy) {
-                	 count = count % 4;
-                	 post.target = new Pair(startx[count], starty[count]);
-	                 post.targetSet = true;
-	                 count++;
+                    count = count % 4;
+                    post.target = new Pair(startx[count], starty[count]);
+                    post.targetSet = true;
+                    count++;
                 }
             }
 
@@ -386,68 +391,39 @@ public class Player extends outpost.sim.Player {
 
         for (Cell cell : allCells) {
             Pair orig = cell.location;
-            
-            //Add Home cells to a different list 
-            if(manDistance(cell.location, home[my_id]) <=1 && homeCells.size()<3)
-            {
-            	homeCells.add(cell);
+
+            if (PairtoPoint(orig).water) {
+                    cell.w_value = -1;
+                    cell.l_value = -1;
+                    cell.r_value = -1;
+                    continue;
             }
-            else {
-	            if (PairtoPoint(orig).water) {
-	                    cell.w_value = -1;
-	                    cell.l_value = -1;
-	                    cell.r_value = -1;
-	                    continue;
-	            }
-	
-	            ArrayList<Pair> diamond = diamondFromPair(orig, r);
-	            int flag = 0;
-	            for (Pair p : diamond) {
-	
-	                if (PairtoPoint(p).water) {                	
-	                    cell.w_value += L; 
-	                } else {
-	                    cell.l_value += W;
-	                }      
-	            }
-	            cell.r_value = Math.min(cell.w_value, cell.l_value);
+
+            ArrayList<Pair> diamond = diamondFromPair(orig, r);
+            for (Pair p : diamond) {
+
+                if (PairtoPoint(p).water) {
+                    cell.w_value += L; 
+                } else {
+                    cell.l_value += W;
+                }      
             }
-        }        
-        Collections.sort(allCells);
-                
-        //Clone the array Lsit
-        ArrayList<Cell> aCells = new ArrayList<Cell>(allCells.size());
-        for(Cell c: allCells)
-        {
-        	aCells.add(c);
-        }
         
-        //Adjust the ordering of the list so that the home cells occur at 6th,7th and 8th in order
-        //in the valued cells
-        allCells.removeAll(allCells);
-        int count = 0;
-        for(Cell c: aCells)
-        {	
-        	if(count == 5)
-        	{
-        		for(Cell h: homeCells)        		
-        			allCells.add(h);        		        		
-        	} 
-        	//Home Cells are added seperately sodo not add them again
-        	if(manDistance(c.location, home[my_id]) > 1)
-        	{
-        		allCells.add(c);
-        		count++; 
-        	} 
-        }    
-        //System.out.println("Test Break Point");
+            cell.r_value = Math.min(cell.w_value, cell.l_value);
+        }
+        Collections.sort(allCells);
     }
 
     void initCells() {
         allCells = new ArrayList<Cell>();
-        homeCells = new ArrayList<Cell>();
+        homeCells = new ArrayList<Cell>(3);
         for (int i = 0; i < grid.length; i++) {
             allCells.add(new Cell(PointtoPair(grid[i])));
+            
+          //Add home cells
+            Cell c = new Cell(PointtoPair(grid[i]));
+            if(manDistance(c.location, home[my_id]) <=1)
+            	homeCells.add(c);
         }
     }
 
