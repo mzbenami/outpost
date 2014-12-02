@@ -1,4 +1,4 @@
-package outpost.michael;
+package outpost.group6;
 
 import java.util.*;
 import outpost.sim.Pair;
