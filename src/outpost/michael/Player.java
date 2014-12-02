@@ -7,8 +7,12 @@ import outpost.sim.Point;
 import outpost.sim.movePair;
 
 import java.lang.management.*;
+
  
 public class Player extends outpost.sim.Player {
+    
+
+    int outpost_id = 0;
     static int size =100;
     static Point[] grid = new Point[size*size];
     int r;
@@ -215,8 +219,21 @@ public class Player extends outpost.sim.Player {
         }
         return false;
     }
+
+    public void printOupost()
+    {
+        System.out.printf("[Group6][Outpost] Total Outposts Alive: %d, Total Spawned: %d\n", ourPosts.size(), outpost_id);
+
+        for(Post p: ourPosts)
+        {
+            System.out.printf("[Group6][Outpost] id:%d, current:(%d, %d), target: (%d, %d)\n", p.id, p.current.x, p.current.y, p.target.x, p.target.y);
+        }
+    }
   
     public ArrayList<movePair> move(ArrayList<ArrayList<Pair>> king_outpostlist, Point[] gridin, int r, int L, int W, int t){
+        System.out.printf("[Group6][START]\n");
+        long startCpuTime = getCpuTime();
+
         moveCount++;
         this.grid = gridin;
 
@@ -237,6 +254,8 @@ public class Player extends outpost.sim.Player {
         refreshPosts(king_outpostlist); //allign our outpost list with the one passed in from the simulator
                                         //also sets targets for any newly created outposts, stored in Post.target
         refreshTargets(region[0], region[1]); 
+
+        printOupost();
         
         // if (moveCount % 300 == 0) {
         //     region[1].x += rx[my_id];
@@ -246,13 +265,22 @@ public class Player extends outpost.sim.Player {
 
         ArrayList<movePair> nextlist = new ArrayList<movePair>();
 
-        for (Post post : ourPosts) {
+        for (int i =0; i < ourPosts.size(); i++) 
+        {
+            Post post = ourPosts.get(i);
             Pair next = findNextMovePos(post.current, post.target);
 
-            System.out.println("[GROUP 6][LOG] " + post + " Next: " + next.x + "," + next.y);
+            System.out.println("[Group6][LOG] " + post + " Next: " + next.x + "," + next.y);
             
-            nextlist.add(new movePair(post.id, next));
+            nextlist.add(new movePair(i, next));
+            post.current = next;
         }
+        long endCpuTime = getCpuTime();
+
+        long timeTaken = (endCpuTime - startCpuTime)/(1000000); //ms
+        totalCpuTime += timeTaken; 
+
+        System.out.printf("[Group6][END] Cpu Time, This iteration: %d ms, Total: %d ms\n", timeTaken, totalCpuTime);
 
         return nextlist;
     
@@ -260,17 +288,95 @@ public class Player extends outpost.sim.Player {
 
     /*allign our outpost list with the one passed in from the simulator
     also sets targets for any newly created outposts, stored in Post.target */
+
+    void printHashMap(HashMap<Tuple, ArrayList<Integer>> map)
+    {
+        System.out.printf("[refreshPosts][print] Size %d\n", map.size());
+        Iterator iterator = map.keySet().iterator();
+        while(iterator.hasNext())
+        {
+            Tuple t = (Tuple)iterator.next();
+            System.out.printf("[refreshPosts][print] Key %d, %d, %d\n", t.x, t.y, t.hashCode());
+            System.out.printf("[refreshPosts][print] Value size %d\n", map.get(t).size());
+
+        }
+    }
+
     void refreshPosts(ArrayList<ArrayList<Pair>> king_outpostlist) {
         ArrayList<Pair> ourKingList = king_outpostlist.get(my_id);
-             
-        ourPosts.clear();
 
-        for (int i = 0; i < ourKingList.size(); i++) {
-                Post post = new Post(i);
-                post.current = ourKingList.get(i);
-                ourPosts.add(post);                
+        HashMap<Tuple, ArrayList<Integer>> map = new HashMap<Tuple, ArrayList<Integer>>();
+        ArrayList<Integer> temp;
+        Tuple key;
+
+        for(Integer i = 0; i < ourPosts.size(); i++)
+        {
+            key = new Tuple(ourPosts.get(i).current);
+            //System.out.printf("[refreshPosts]Adding Key  %d, %d, %d\n", key.x, key.y, key.hashCode());
+            map.put(key, new ArrayList<Integer>());
             
         }
+
+        for(Integer i = 0; i < ourPosts.size(); i++)
+        {
+            key = new Tuple(ourPosts.get(i).current);
+            //System.out.printf("[refreshPosts]Adding value to Key  %d, %d, %d\n", key.x, key.y, key.hashCode());
+            map.get(key).add(i);
+            
+        }
+        //printHashMap(map);
+
+        for(Integer i = 0; i < ourKingList.size(); i++)
+        {
+            key =  new Tuple(ourKingList.get(i));
+            temp = map.get(key);
+
+            if(temp == null || temp.size() == 0)
+            {
+                //System.out.printf("[refreshPosts]Key Not present %d, %d, %d\n", key.x, key.y, key.hashCode());
+                Post post = new Post(outpost_id);
+                outpost_id++;
+                post.current = ourKingList.get(i);
+                ourPosts.add(post);
+                System.out.printf("[Group6][RefreshPosts] Adding new outpost[%d] at %d, %d \n", post.id, post.current.x, post.current.y);
+            }
+            else
+            {
+                temp.remove(temp.size()-1);
+            }
+        }
+
+        HashMap<Integer, Boolean> postToRemove = new HashMap<Integer, Boolean>();
+
+        Iterator iterator = map.keySet().iterator();
+        while(iterator.hasNext())
+        {
+            temp = map.get(iterator.next());
+            if(temp != null)
+            {
+                for(Integer index:temp)
+                {
+                    postToRemove.put(index, true);
+                }
+            }
+        }
+
+        ArrayList<Post> newPosts = new ArrayList<Post>();
+        for(Integer i = 0; i < ourPosts.size(); i++)
+        {
+            if(postToRemove.get(i) != null)
+            {
+                Pair toRemove = ourPosts.get(i).current;
+                System.out.printf("[Group6][RefreshPosts] Removing outpost[%d] at %d, %d \n",ourPosts.get(i).id, toRemove.x, toRemove.y);
+            }
+            else
+            {
+                newPosts.add(new Post(ourPosts.get(i)));
+            }
+        }
+    
+        ourPosts.clear();
+        ourPosts = newPosts;
     }
 
     
