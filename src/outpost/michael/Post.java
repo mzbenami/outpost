@@ -5,7 +5,7 @@ import outpost.sim.Pair;
 
 public class Post {
 
-	public int id;
+	public Integer id;
 	public Pair current;
 	public Pair target;
 	public int w_value;
@@ -18,10 +18,12 @@ public class Post {
 	public Post(int id) {
 		this.id = id;
 		targetSet = false;
+		role = "Explorer";
 	}
 
 	public Post() {
 		targetSet = false;
+		role = "Explorer";
 	}
 
 	public Post(Post o)
@@ -33,6 +35,7 @@ public class Post {
 		l_value = o.l_value;
 		o.r_value = o.r_value;
 		targetSet = o.targetSet;
+		role = o.role;
 	}
 
 	public String toString() {

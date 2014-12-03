@@ -12,7 +12,7 @@ import java.lang.management.*;
 public class Player extends outpost.sim.Player {
     
 
-    int outpost_id = 0;
+    Integer outpost_id = 0;
     static int size =100;
     static Point[] grid = new Point[size*size];
     int r;
@@ -51,7 +51,11 @@ public class Player extends outpost.sim.Player {
     int RG_THRESH = 5;
     int PR_THRESH = 6;//Maximum Protector OutPosts
 
-    //TODO: Create ourPostsHash, resourceGettersList, explorersList, protectorsList
+    //TODO-Done: Create ourPostsHash, resourceGettersList, explorersList, protectorsList
+    HashMap<Integer, Post> ourPostsHash = new HashMap<Integer, Post>();
+    ArrayList<Integer> resourceGettersList = new ArrayList<Integer>();
+    ArrayList<Integer> explorersList = new ArrayList<Integer>();
+    ArrayList<Integer> protectorsList = new ArrayList<Integer>();
     
     double[] water = new double[4];
     double[] soil = new double[4];
@@ -147,9 +151,11 @@ public class Player extends outpost.sim.Player {
     }
     
     public int delete(ArrayList<ArrayList<Pair>> king_outpostlist, Point[] gridin) {
-        System.out.printf("haha, we are trying to delete a outpost for player %d\n", this.id);
+        System.out.printf("[Group6] Deleting post due to shortage of resources\n");
         int del = king_outpostlist.get(my_id).size() - 1;
+        Post p = ourPosts.get(del);
         ourPosts.remove(ourPosts.size() - 1);
+        ourPostsHash.remove(p.id);
         return del;
     }
 
@@ -238,7 +244,14 @@ public class Player extends outpost.sim.Player {
 
         for(Post p: ourPosts)
         {
-            System.out.printf("[Group6][Outpost] id:%d, current:(%d, %d), target: (%d, %d)\n", p.id, p.current.x, p.current.y, p.target.x, p.target.y);
+            if(p.targetSet == true)
+            {
+                System.out.printf("[Group6][Outpost] id:%d, role = %s, current:(%d, %d), target:(%d, %d) \n", p.id, p.role, p.current.x, p.current.y, p.target.x, p.target.y);
+            }
+            else
+            {
+                System.out.printf("[Group6][Outpost] id:%d, role = %s, current:(%d, %d), \n", p.id, p.role, p.current.x, p.current.y);
+            }
         }
     }
   
@@ -265,7 +278,7 @@ public class Player extends outpost.sim.Player {
 
         refreshPosts(king_outpostlist); //allign our outpost list with the one passed in from the simulator
                                         //also sets targets for any newly created outposts, stored in Post.target
-        refreshTargets(region[0], region[1]); //TODO: Not Needed now
+        //refreshTargets(region[0], region[1]); //TODO-Done: Not Needed now
 
         printOupost();
         
@@ -275,9 +288,14 @@ public class Player extends outpost.sim.Player {
         
         // }
 
-        //TODO: Call resourceGetterTask
-        //TODO: Call protectorTask
-        //TODO: Call explorerTask
+        //TODO-Done: Call resourceGetterTask
+        resourceGetterTask();
+
+        //TODO-Done: Call protectorTask
+        protectorTask();
+
+        //TODO-Done: Call explorerTask
+        explorerTask();
 
         ArrayList<movePair> nextlist = new ArrayList<movePair>();
 
@@ -321,7 +339,7 @@ public class Player extends outpost.sim.Player {
 
     void refreshPosts(ArrayList<ArrayList<Pair>> king_outpostlist) {
 
-        //TODO: Review, add newly spawed outposts to explorer list and create ourPostsHash
+        //TODO-Done: Review, add newly spawed outposts to explorer list and create ourPostsHash
         ArrayList<Pair> ourKingList = king_outpostlist.get(my_id);
 
         HashMap<Tuple, ArrayList<Integer>> map = new HashMap<Tuple, ArrayList<Integer>>();
@@ -357,6 +375,8 @@ public class Player extends outpost.sim.Player {
                 outpost_id++;
                 post.current = ourKingList.get(i);
                 ourPosts.add(post);
+                //TODO-Done: Add id to explorersList
+                explorersList.add(post.id);
                 System.out.printf("[Group6][RefreshPosts] Adding new outpost[%d] at %d, %d \n", post.id, post.current.x, post.current.y);
             }
             else
@@ -395,7 +415,51 @@ public class Player extends outpost.sim.Player {
         }
     
         ourPosts.clear();
+        ourPostsHash.clear();
+
         ourPosts = newPosts;
+
+        for(Post p:ourPosts)
+        {
+            ourPostsHash.put(p.id, p);
+        }
+
+        ArrayList<Integer> newRG = new ArrayList<Integer>();
+        for(Integer id: resourceGettersList)
+        {
+            if(ourPostsHash.containsKey(id) == true)
+            {
+                newRG.add(id);
+            }
+        }
+
+        ArrayList<Integer> newP = new ArrayList<Integer>();
+        for(Integer id: protectorsList)
+        {
+            if(ourPostsHash.containsKey(id) == true)
+            {
+                newP.add(id);
+            }
+        }
+
+        ArrayList<Integer> newE = new ArrayList<Integer>();
+        for(Integer id: explorersList)
+        {
+            if(ourPostsHash.containsKey(id) == true)
+            {
+                newE.add(id);
+            }
+        }
+
+        resourceGettersList.clear();
+        resourceGettersList = newRG;
+
+        explorersList.clear();
+        explorersList = newE;
+
+        protectorsList.clear();
+        protectorsList = newP;
+        
     }
 
     
@@ -424,77 +488,77 @@ public class Player extends outpost.sim.Player {
         return new Pair(startx[c], starty[c]);
     }
 
-    void refreshTargets(Pair a, Pair b) {
-        
-        ArrayList<Post> ourPostsCopy = new ArrayList<Post>();
-        ourPostsCopy.addAll(ourPosts);
+        // void refreshTargets(Pair a, Pair b) {
+            
+        //     ArrayList<Post> ourPostsCopy = new ArrayList<Post>();
+        //     ourPostsCopy.addAll(ourPosts);
 
-        for (Post post : ourPostsCopy) {
-            post.targetSet = false;
-        }
+        //     for (Post post : ourPostsCopy) {
+        //         post.targetSet = false;
+        //     }
 
-        for (Cell c : allCells) {
-            if (!isInRegion(c.location, a, b))
-                continue;
+        //     for (Cell c : allCells) {
+        //         if (!isInRegion(c.location, a, b))
+        //             continue;
 
-            int postCount = 0;
-            for (Post post : ourPosts) {
-                if (post.targetSet == false || manDistance(post.target, c.location) > 2*r) {
-                    postCount++;
-                } else {
-                    break;
-                }
-            }
+        //         int postCount = 0;
+        //         for (Post post : ourPosts) {
+        //             if (post.targetSet == false || manDistance(post.target, c.location) > 2*r) {
+        //                 postCount++;
+        //             } else {
+        //                 break;
+        //             }
+        //         }
 
-            if (postCount != ourPosts.size()) {
-                continue;
-            }
+        //         if (postCount != ourPosts.size()) {
+        //             continue;
+        //         }
 
-            int bestDist = 1000;
-            Post closestPost = null;
-            for (Post post : ourPostsCopy) {
-                int d = manDistance(post.current, c.location);
-                if (d < bestDist) {
-                    bestDist = d;
-                    closestPost = post;
-                }
-            }
-            closestPost.target = c.location;
-            closestPost.l_value = c.l_value;
-            closestPost.w_value = c.w_value;
-            closestPost.r_value = c.r_value;
-            closestPost.targetSet = true;
-            ourPostsCopy.remove(closestPost);
+        //         int bestDist = 1000;
+        //         Post closestPost = null;
+        //         for (Post post : ourPostsCopy) {
+        //             int d = manDistance(post.current, c.location);
+        //             if (d < bestDist) {
+        //                 bestDist = d;
+        //                 closestPost = post;
+        //             }
+        //         }
+        //         closestPost.target = c.location;
+        //         closestPost.l_value = c.l_value;
+        //         closestPost.w_value = c.w_value;
+        //         closestPost.r_value = c.r_value;
+        //         closestPost.targetSet = true;
+        //         ourPostsCopy.remove(closestPost);
 
-            if (ourPostsCopy.size() == 0) {
-                break;
-            }      
-        }
+        //         if (ourPostsCopy.size() == 0) {
+        //             break;
+        //         }      
+        //     }
 
-        if (ourPostsCopy.size() > 0) {
-           
-            if (resizeCount < 2) {
-                region[1].x += rx[my_id];
-                region[1].y += ry[my_id];
-                refreshTargets(region[0], region[1]);
-                resizeCount++;
-            } else {
-                int count = 0;
+        //     if (ourPostsCopy.size() > 0) {
+               
+        //         if (resizeCount < 2) {
+        //             region[1].x += rx[my_id];
+        //             region[1].y += ry[my_id];
+        //             refreshTargets(region[0], region[1]);
+        //             resizeCount++;
+        //         } else {
+        //             int count = 0;
 
-                for (Post post : ourPostsCopy) {
-                    count = count % 4;
-                    post.target = new Pair(startx[count], starty[count]);
-                    post.targetSet = true;
-                    count++;
-                }
-            }
+        //             for (Post post : ourPostsCopy) {
+        //                 count = count % 4;
+        //                 post.target = new Pair(startx[count], starty[count]);
+        //                 post.targetSet = true;
+        //                 count++;
+        //             }
+        //         }
 
-        }
-    }
+        //     }
+        // }
 
     void resourceGetterTask() {
 
-        calculateres(water, soil, noutpost);
+        calculateres();
 
         if (!(noutpost[my_id] >= ourPosts.size() + RG_THRESH)) {
             assignResourceGetters();
@@ -507,11 +571,11 @@ public class Player extends outpost.sim.Player {
         int nExplorers = explorersList.size();
 
         int neededOutposts = ourPosts.size() + RG_THRESH;
-        int neededWater = W * (neededOutposts - 1);
-        int neededLand = L * (neededOutposts - 1);
+        double neededWater = W * (neededOutposts - 1);
+        double neededLand = L * (neededOutposts - 1);
 
-        int currentLand = soil[my_id];
-        int currentWater = water[my_id];
+        double currentLand = soil[my_id];
+        double currentWater = water[my_id];
 
         Pair[] searchRegion = {home[my_id], new Pair(50, 50)};
 
@@ -523,7 +587,7 @@ public class Player extends outpost.sim.Player {
         for (int nTargets = 1; nTargets <= availablePostSize; nTargets++) {
             
             for (Cell c : allCloseCells) {
-                if (c.w_value >= neededWater / nTargets && c.l_value >= neededLand / nTargets) { //TODO: Shouldntt it be neededWater/availablePostSize and neededLand/availablePostSize?
+                if (c.w_value >= neededWater / nTargets && c.l_value >= neededLand / nTargets) { //TODO: Shouldn't it be neededWater/availablePostSize and neededLand/availablePostSize?
                     targets.add(c.location);
                     if (targets.size() >= nTargets) {
                         break;
@@ -536,7 +600,6 @@ public class Player extends outpost.sim.Player {
             }
         }
 
-        
         for (int i = 0; i < targets.size(); i++) {
    
             int bestDist = 1000;
@@ -548,9 +611,13 @@ public class Player extends outpost.sim.Player {
                     closestPost = post;
                 }
             }
-            closestPost.target = targets.get(i);
-            targets.remove(i);
-            resourceGetters.remove(closestPost);
+            if(closestPost != null)
+            {
+                closestPost.target = targets.get(i);
+                closestPost.targetSet = true;
+                targets.remove(i);
+                resourceGetters.remove(closestPost);
+            }
         }
 
         for (int i = 0; i < targets.size(); i++) {
@@ -564,12 +631,17 @@ public class Player extends outpost.sim.Player {
                         closestPost = post;
                     }
                 }
-                closestPost.target = targets.get(i);
-                targets.remove(i);
-                closestPost.role = "Resource Getter";
-                explorersList.remove(closestPost.id);
-                explorers.remove(closestPost);
-                //TODO:Add id to resourceGettersList
+                if(closestPost != null)
+                {
+                    closestPost.target = targets.get(i);
+                    closestPost.targetSet = true;
+                    targets.remove(i);
+                    closestPost.role = "Resource Getter";
+                    explorersList.remove(closestPost.id);
+                    explorers.remove(closestPost);
+                    //TODO-Done:Add id to resourceGettersList
+                    resourceGettersList.add(closestPost.id);
+                }
             }
         }     
 
@@ -593,7 +665,7 @@ public class Player extends outpost.sim.Player {
 
         for (Integer id : resourceGettersList) {
             Post post = ourPostsHash.get(id);
-            currentresourceGetters.add(post);
+            currentResourceGetters.add(post);
         }
 
         return currentResourceGetters;
@@ -745,7 +817,7 @@ public class Player extends outpost.sim.Player {
     	//First create the copy of the home cells and then get the list of unassigned home cells    	        
     	ArrayList<Pair> unassignedHome = new ArrayList<Pair>();
     	unassignedHome.addAll(homeCells);    	    	
-    	for(int id: protectorsList)
+    	for(Integer id: protectorsList)
     	{	
 			Post p = ourPostsHash.get(id);
 			for(Pair pr: homeCells){
@@ -759,8 +831,8 @@ public class Player extends outpost.sim.Player {
     	}
     	
     	//Assign the outposts a targetvalue basedon the unassigned homeCells
-    	int i = 0;
-    	while(PR_THRESH- protectorsList.size() >=0 && explorersList.size()>0)//TODO: Check should be PR_THRESH- protectorsList.size() >0
+    	Integer i = 0;
+    	while(PR_THRESH- protectorsList.size() >0 && explorersList.size()>0)//TODO-Done: Check should be PR_THRESH- protectorsList.size() >0
     	{ 
     		int curr_id = explorersList.get(0);
     		Post p = ourPostsHash.get(curr_id);
@@ -769,7 +841,8 @@ public class Player extends outpost.sim.Player {
     		p.role = "Protectors";
     		i++;
     		explorersList.remove(0);
-            //TODO: Add id to protectorsList
+            //TODO-Done: Add id to protectorsList
+            protectorsList.add(p.id);
     	}
     }  
     
@@ -779,9 +852,9 @@ public class Player extends outpost.sim.Player {
     	//Create a list of unassigned explores
     	ArrayList<Integer> expList = new ArrayList<Integer>();
     	for(Integer id : explorersList)
-    	{
+    	{  
     		Post exp = ourPostsHash.get(id);
-    		if(exp.target== null)    		
+    		if(exp.targetSet== false)   //TODO-Done: This check sould be on targetSet 		
     			expList.add(id);    		
     	}
     	
@@ -792,6 +865,8 @@ public class Player extends outpost.sim.Player {
     
     //Set targets for the Explorers
     void setExplorerTargets(Pair a, Pair b, int dist, ArrayList<Integer> expList){
+        if(expList.size()==0)
+            return;
     	//Check each cell starting from farthest post
     	for (Cell c : allFarCells) {
             if (!isInRegion(c.location, a, b))

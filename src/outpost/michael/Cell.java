@@ -6,9 +6,9 @@ import outpost.sim.Pair;
 public class Cell implements Comparable<Cell> {
 
 	public Pair location;
-	public int w_value;
-	public int l_value;
-	public int r_value;
+	public double w_value;
+	public double l_value;
+	public double r_value;
 
 	public Cell(Pair location) {
 		this.location = location;
