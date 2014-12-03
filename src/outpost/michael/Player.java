@@ -47,8 +47,12 @@ public class Player extends outpost.sim.Player {
     int[] starty = {0, 0, size -1, size -1};
     int moveCount = 0;
     int resizeCount = 0;
+    
     int RG_THRESH = 5;
     int PR_THRESH = 6;//Maximum Protector OutPosts
+
+    //TODO: Create ourPostsHash, resourceGettersList, explorersList, protectorsList
+    
     double[] water = new double[4];
     double[] soil = new double[4];
     int[] noutpost = new int[4];
@@ -261,7 +265,7 @@ public class Player extends outpost.sim.Player {
 
         refreshPosts(king_outpostlist); //allign our outpost list with the one passed in from the simulator
                                         //also sets targets for any newly created outposts, stored in Post.target
-        refreshTargets(region[0], region[1]); 
+        refreshTargets(region[0], region[1]); //TODO: Not Needed now
 
         printOupost();
         
@@ -270,6 +274,10 @@ public class Player extends outpost.sim.Player {
         //     region[1].y += ry[my_id];
         
         // }
+
+        //TODO: Call resourceGetterTask
+        //TODO: Call protectorTask
+        //TODO: Call explorerTask
 
         ArrayList<movePair> nextlist = new ArrayList<movePair>();
 
@@ -312,6 +320,8 @@ public class Player extends outpost.sim.Player {
     }
 
     void refreshPosts(ArrayList<ArrayList<Pair>> king_outpostlist) {
+
+        //TODO: Review, add newly spawed outposts to explorer list and create ourPostsHash
         ArrayList<Pair> ourKingList = king_outpostlist.get(my_id);
 
         HashMap<Tuple, ArrayList<Integer>> map = new HashMap<Tuple, ArrayList<Integer>>();
@@ -486,7 +496,7 @@ public class Player extends outpost.sim.Player {
 
         calculateres(water, soil, noutpost);
 
-        if !(noutpost[my_id] >= ourPosts.size() + RG_THRESH) {
+        if (!(noutpost[my_id] >= ourPosts.size() + RG_THRESH)) {
             assignResourceGetters();
         }
     }
@@ -505,7 +515,7 @@ public class Player extends outpost.sim.Player {
 
         Pair[] searchRegion = {home[my_id], new Pair(50, 50)};
 
-        int availablePostSize = nResourceGetters + nExplorers;
+        int availablePostSize = nResourceGetters + nExplorers; //TODO: Review, This will use up all explorers
         ArrayList<Pair> targets = new ArrayList<Pair>();
         ArrayList<Post> resourceGetters = getCurrentresourceGetters();
         ArrayList<Post> explorers = getCurrentExplorers();
@@ -513,7 +523,7 @@ public class Player extends outpost.sim.Player {
         for (int nTargets = 1; nTargets <= availablePostSize; nTargets++) {
             
             for (Cell c : allCloseCells) {
-                if (c.w_value >= neededWater / nTargets && c.l_value >= neededLand / nTargets) {
+                if (c.w_value >= neededWater / nTargets && c.l_value >= neededLand / nTargets) { //TODO: Shouldntt it be neededWater/availablePostSize and neededLand/availablePostSize?
                     targets.add(c.location);
                     if (targets.size() >= nTargets) {
                         break;
@@ -559,6 +569,7 @@ public class Player extends outpost.sim.Player {
                 closestPost.role = "Resource Getter";
                 explorersList.remove(closestPost.id);
                 explorers.remove(closestPost);
+                //TODO:Add id to resourceGettersList
             }
         }     
 
@@ -749,7 +760,7 @@ public class Player extends outpost.sim.Player {
     	
     	//Assign the outposts a targetvalue basedon the unassigned homeCells
     	int i = 0;
-    	while(PR_THRESH- protectorsList.size() >=0 && explorersList.size()>0)
+    	while(PR_THRESH- protectorsList.size() >=0 && explorersList.size()>0)//TODO: Check should be PR_THRESH- protectorsList.size() >0
     	{ 
     		int curr_id = explorersList.get(0);
     		Post p = ourPostsHash.get(curr_id);
@@ -758,6 +769,7 @@ public class Player extends outpost.sim.Player {
     		p.role = "Protectors";
     		i++;
     		explorersList.remove(0);
+            //TODO: Add id to protectorsList
     	}
     }  
     
