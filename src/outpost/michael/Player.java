@@ -729,7 +729,7 @@ public class Player extends outpost.sim.Player {
     }
 
     //Assign Protector outposts their targets
-    void ProtectorTask(){ 	
+    void protectorTask(){ 	
     	    	
     	//First create the copy of the home cells and then get the list of unassigned home cells    	        
     	ArrayList<Pair> unassignedHome = new ArrayList<Pair>();
@@ -760,6 +760,67 @@ public class Player extends outpost.sim.Player {
     		explorersList.remove(0);
     	}
     }  
+    
+  //Assign Explorer Outposts suitable targets
+    void explorerTask()
+    {
+    	//Create a list of unassigned explores
+    	ArrayList<Integer> expList = new ArrayList<Integer>();
+    	for(Integer id : explorersList)
+    	{
+    		Post exp = ourPostsHash.get(id);
+    		if(exp.target== null)    		
+    			expList.add(id);    		
+    	}
+    	
+    	//Function call to assign targets to the Explorers 
+    	setExplorerTargets(region[0], region[1], (2*r), expList);
+    }
+    
+    
+    //Set targets for the Explorers
+    void setExplorerTargets(Pair a, Pair b, int dist, ArrayList<Integer> expList){
+    	//Check each cell starting from farthest post
+    	for (Cell c : allFarCells) {
+            if (!isInRegion(c.location, a, b))
+                continue;
+            
+            //Check if there exists any existing outpost at a certain distance to this cell
+            //If so the we do not assign this cell as target for the explorer
+            boolean postExists = false;
+            for(Post p: ourPosts)
+            {
+            	if(p.target != null && manDistance(p.target,c.location) <= dist)
+            	{
+            		postExists = true;
+            		break;
+            	}
+            }
+            
+            //If no post exists near by then assign this cell as target
+            if(!postExists)
+            {
+            	int id = expList.get(0);
+            	Post exp = ourPostsHash.get(id);
+            	exp.target = c.location;
+    			exp.targetSet = true;
+    			expList.remove(0);
+            }
+            
+            //Checkif more explorers remain to be assigned targets
+            //If not then exit the loop
+            if(expList.size()==0)
+            	break;
+    	}
+    	
+    	//After the current iteration through all cells if still there are
+    	//Explorers remaining to be assined targets because of "distance" condition
+    	//not being satisfied then call this function recursively by halving the distance
+    	if(expList.size()!=0)
+    		setExplorerTargets(region[0], region[1], dist/2, expList);
+    	else return;    	
+    }
+    
     
     static Point PairtoPoint(Pair pr) {
         return grid[pr.x*size+pr.y];
