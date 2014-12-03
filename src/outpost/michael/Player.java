@@ -1,4 +1,4 @@
-package outpost.group6;
+package outpost.michael;
 
 import java.util.*;
 
@@ -143,7 +143,7 @@ public class Player extends outpost.sim.Player {
 
     public Pair findNextMovePos(Pair current, Pair target)
     {
-        System.out.printf("[Group6][LOG] Finding path (%d, %d) -> (%d, %d)\n", current.x, current.y, target.x, target.y);
+     //   System.out.printf("[Group6][LOG] Finding path (%d, %d) -> (%d, %d)\n", current.x, current.y, target.x, target.y);
         for (int i = 0; i < size; ++i)
         {
             for (int j = 0; j < size; ++j)
@@ -169,7 +169,7 @@ public class Player extends outpost.sim.Player {
                 if (x < 0 || x >= size || y < 0 || y >= size || vst[x][y]) continue;
                 if (x == current.x && y == current.y)
                 {
-                    System.out.printf("[Group6][LOG] Path Found\n");
+                  //  System.out.printf("[Group6][LOG] Path Found\n");
                     return new Pair(p);
                 }
                 Pair pr = new Pair(x, y);
@@ -196,7 +196,7 @@ public class Player extends outpost.sim.Player {
         //     }
         // }
 
-        System.out.printf("[Group6][LOG] Path Found\n");
+//System.out.printf("[Group6][LOG] Path Found\n");
         return new Pair(current);
 
     }
@@ -231,7 +231,7 @@ public class Player extends outpost.sim.Player {
     }
   
     public ArrayList<movePair> move(ArrayList<ArrayList<Pair>> king_outpostlist, Point[] gridin, int r, int L, int W, int t){
-        System.out.printf("[Group6][START]\n");
+     //   System.out.printf("[Group6][START]\n");
         long startCpuTime = getCpuTime();
 
         moveCount++;
@@ -245,7 +245,7 @@ public class Player extends outpost.sim.Player {
             calcCellValues(); //sort every cell on the board by their "water value", descending
             ourPosts = new ArrayList<Post>(); // a list of our Outposts that persists through "move" calls
             region[0] = new Pair(startx[my_id], starty[my_id]);
-            region[1] = new Pair (50 , 50   );
+            region[1] = new Pair (50 , 50);
 
 
             initDone = true;
@@ -270,7 +270,7 @@ public class Player extends outpost.sim.Player {
             Post post = ourPosts.get(i);
             Pair next = findNextMovePos(post.current, post.target);
 
-            System.out.println("[Group6][LOG] " + post + " Next: " + next.x + "," + next.y);
+   //         System.out.println("[Group6][LOG] " + post + " Next: " + next.x + "," + next.y);
             
             nextlist.add(new movePair(i, next));
             post.current = next;
@@ -280,11 +280,12 @@ public class Player extends outpost.sim.Player {
         long timeTaken = (endCpuTime - startCpuTime)/(1000000); //ms
         totalCpuTime += timeTaken; 
 
-        System.out.printf("[Group6][END] Cpu Time, This iteration: %d ms, Total: %d ms\n", timeTaken, totalCpuTime);
+      //  System.out.printf("[Group6][END] Cpu Time, This iteration: %d ms, Total: %d ms\n", timeTaken, totalCpuTime);
 
         return nextlist;
     
     }
+
 
     /*allign our outpost list with the one passed in from the simulator
     also sets targets for any newly created outposts, stored in Post.target */
