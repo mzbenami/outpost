@@ -2,6 +2,7 @@ package outpost.michael;
 
 import java.util.*;
 
+import outpost.ritu.Post;
 import outpost.sim.Pair;
 import outpost.sim.Point;
 import outpost.sim.movePair;
@@ -38,6 +39,7 @@ public class Player extends outpost.sim.Player {
     ArrayList<Cell> allCells;
     ArrayList<Cell> allCloseCells;
     ArrayList<Cell> allFarCells;
+    ArrayList<Pair> homeCells;
     ArrayList<Post> ourPosts;
     Pair[] region = new Pair[2];
     int[] rx = {10, -10, -10, 10};
@@ -47,6 +49,7 @@ public class Player extends outpost.sim.Player {
     int moveCount = 0;
     int resizeCount = 0;
     int RG_THRESH = 5;
+    int PR_THRESH = 6;//Maximum Protector OutPosts
     double[] water = new double[4];
     double[] soil = new double[4];
     int[] noutpost = new int[4];
@@ -649,6 +652,10 @@ public class Player extends outpost.sim.Player {
     }
 
     void initCells() {
+    	//Create Home Cells
+    	homeCells = new ArrayList<Pair>();
+    	createHomeCellsList();
+    	
         allCells = new ArrayList<Cell>();
         for (int i = 0; i < grid.length; i++) {
             allCells.add(new Cell(PointtoPair(grid[i])));
@@ -691,6 +698,69 @@ public class Player extends outpost.sim.Player {
     }
 
 
+    //Create the list of the home cells
+    void createHomeCellsList()
+    {
+    	int[] incX = {1,-1,-1,1};
+    	int[] incY = {1,1,-1,-1};
+    	
+    	//First Home Cell
+    	Pair p= new Pair(home[my_id].x, home[my_id].y + r*(incY[my_id]));
+    	homeCells.add(p);
+    	
+    	//Second Home Cell
+    	Pair p2= new Pair(home[my_id].x+ r*(incX[my_id]), home[my_id].y);
+    	homeCells.add(p2);
+    	
+    	//Third Home Cell
+    	Pair p3= new Pair(home[my_id].x+ r*(incX[my_id]), home[my_id].y + r*(incY[my_id]));
+    	homeCells.add(p3);
+    	
+    	//Fourth Home Cell
+    	Pair p4 = new Pair(p.x, p.y+(incY[my_id]));
+    	homeCells.add(p4);
+    	
+    	//Fifth Home Cell
+    	Pair p5 = new Pair(p2.x+(incX[my_id]), p2.y);    	
+    	homeCells.add(p5);
+    
+    	//Sixth Home Cell    	
+    	Pair p6 = new Pair(p3.x+(incX[my_id]), p3.y+(incY[my_id]));    	
+    	homeCells.add(p6);
+    }
+
+    //Assign Protector outposts their targets
+    void ProtectorTask(){ 	
+    	    	
+    	//First create the copy of the home cells and then get the list of unassigned home cells    	        
+    	ArrayList<Pair> unassignedHome = new ArrayList<Pair>();
+    	unassignedHome.addAll(homeCells);    	    	
+    	for(int id: protectorsList)
+    	{	
+			Post p = ourPostsHash.get(id);
+			for(Pair pr: homeCells){
+				if(pr.equals(p.target))
+				{
+					unassignedHome.remove(pr);
+					break;
+				}
+			}
+    		
+    	}
+    	
+    	//Assign the outposts a targetvalue basedon the unassigned homeCells
+    	int i = 0;
+    	while(PR_THRESH- protectorsList.size() >=0 && explorersList.size()>0)
+    	{ 
+    		int curr_id = explorersList.get(0);
+    		Post p = ourPostsHash.get(curr_id);
+    		p.target = unassignedHome.get(i);  
+    		p.targetSet = true;
+    		p.role = "Protectors";
+    		i++;
+    		explorersList.remove(0);
+    	}
+    }  
     
     static Point PairtoPoint(Pair pr) {
         return grid[pr.x*size+pr.y];
