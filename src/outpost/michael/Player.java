@@ -852,6 +852,16 @@ public class Player extends outpost.sim.Player {
     	int[] incX = {1,-1,-1,1};
     	int[] incY = {1,1,-1,-1};
     	
+    	int d =r;
+    	while(d>0)
+    	{
+    		Pair temp = new Pair(home[my_id].x+ d*(incX[my_id]), home[my_id].y + d*(incY[my_id]));
+    		if (PairtoPoint(temp).water)
+    			d--;
+    		else
+    			break;
+    	}
+    	
     	//First Home Cell
     	Pair p= new Pair(home[my_id].x, home[my_id].y + r*(incY[my_id]));
     	homeCells.add(p);
@@ -861,7 +871,7 @@ public class Player extends outpost.sim.Player {
     	homeCells.add(p2);
     	
     	//Third Home Cell
-    	Pair p3= new Pair(home[my_id].x+ r*(incX[my_id]), home[my_id].y + r*(incY[my_id]));
+    	Pair p3= new Pair(home[my_id].x+ d*(incX[my_id]), home[my_id].y + d*(incY[my_id]));
     	homeCells.add(p3);
     	
     	//Fourth Home Cell
@@ -873,7 +883,8 @@ public class Player extends outpost.sim.Player {
     	homeCells.add(p5);
     
     	//Sixth Home Cell    	
-    	Pair p6 = new Pair(p3.x+(incX[my_id]), p3.y+(incY[my_id]));    	
+    	//Pair p6 = new Pair(p3.x+(incX[my_id]), p3.y+(incY[my_id]));
+    	Pair p6 = new Pair(p3.x+(incX[my_id]), p3.y); 
     	homeCells.add(p6);
     }
 
@@ -935,6 +946,12 @@ public class Player extends outpost.sim.Player {
             return;
     	//Check each cell starting from farthest post
     	for (Cell c : allFarCells) {
+       		
+    		//Do not assign water cell as a target
+    		Point ptt = PairtoPoint(c.location);
+    		if(ptt.water)
+    			continue;
+    		
             if (!isInRegion(c.location, a, b))
                 continue;
             
