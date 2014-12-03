@@ -152,7 +152,22 @@ public class Player extends outpost.sim.Player {
     
     public int delete(ArrayList<ArrayList<Pair>> king_outpostlist, Point[] gridin) {
         System.out.printf("[Group6] Deleting post due to shortage of resources\n");
-        int del = king_outpostlist.get(my_id).size() - 1;
+        
+        ArrayList<Pair> ourKingList = king_outpostlist.get(my_id);
+        Pair farthestPair = null;
+        int farthestDistance = 0;
+        int del = 0;
+
+        for (int i = 0; i < ourKingList.size(); i++) {
+            Pair pair = ourKingList.get(i);
+            int d;
+            if ((d = manDistance(pair, home[my_id])) > farthestDistance) {
+                farthestDistance = d;
+                farthestPair = pair;
+                del = i;
+            }
+        }
+
         Post p = ourPosts.get(del);
         ourPosts.remove(ourPosts.size() - 1);
         ourPostsHash.remove(p.id);
@@ -609,7 +624,7 @@ public class Player extends outpost.sim.Player {
 
             int availablePostSize = nResourceGetters + nExplorers; //TODO: Review, This will use up all explorers
 
-            for (int nTargets = 1; nTargets <= availablePostSize; nTargets++) {
+            for (int nTargets = 1; nTargets <= 1; nTargets++) {
 
                 String neededType;
 
@@ -625,6 +640,7 @@ public class Player extends outpost.sim.Player {
                         targets.add(c.location);
                         System.out.println("adding: " + c.w_value + " " + c.l_value);
                         neededWater -= c.w_value;
+                        neededLand -= c.l_value;
                         if (targets.size() >= nTargets) {
                             break;
                         }                    
