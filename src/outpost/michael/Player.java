@@ -56,7 +56,10 @@ public class Player extends outpost.sim.Player {
     ArrayList<Integer> resourceGettersList = new ArrayList<Integer>();
     ArrayList<Integer> explorersList = new ArrayList<Integer>();
     ArrayList<Integer> protectorsList = new ArrayList<Integer>();
-    
+
+
+    ArrayList<Pair> oppPosts = new ArrayList<Pair>();
+
     double[] water = new double[4];
     double[] soil = new double[4];
     int[] noutpost = new int[4];
@@ -167,6 +170,9 @@ public class Player extends outpost.sim.Player {
         {
             return new Pair(current);
         }
+        if(current.x == target.x && current.y == target.y)
+            return new Pair(current);
+
      //   System.out.printf("[Group6][LOG] Finding path (%d, %d) -> (%d, %d)\n", current.x, current.y, target.x, target.y);
         for (int i = 0; i < size; ++i)
         {
@@ -285,6 +291,7 @@ public class Player extends outpost.sim.Player {
         refreshPosts(king_outpostlist); //allign our outpost list with the one passed in from the simulator
                                         //also sets targets for any newly created outposts, stored in Post.target
         //refreshTargets(region[0], region[1]); //TODO-Done: Not Needed now
+        refreshOppPosts(king_outpostlist);
 
         printOupost();
         
@@ -300,8 +307,12 @@ public class Player extends outpost.sim.Player {
         //TODO-Done: Call protectorTask
         protectorTask();
 
+        attackTask();
+
         //TODO-Done: Call explorerTask
         explorerTask();
+
+
 
         ArrayList<movePair> nextlist = new ArrayList<movePair>();
 
@@ -930,5 +941,151 @@ public class Player extends outpost.sim.Player {
 
     static String stringifyPair(Pair pr) {
         return String.format("%d,%d", pr.x, pr.y);
+    }
+
+    void refreshOppPosts(ArrayList<ArrayList<Pair>> king_outpostlist) {
+        for(int i = 0; i < king_outpostlist.size(); i++)
+        {
+            if(i == my_id)
+                continue;
+            oppPosts.addAll(king_outpostlist.get(i));
+        }
+    }
+
+
+
+    public class Duo
+    {
+        Integer masterID;
+        Integer slaveID;
+        boolean ready;
+
+        public Duo()
+        {
+            masterID = -1;
+            slaveID = -1;
+            ready = false;
+        }
+    }
+
+    ArrayList<Duo> attackDuoList = new ArrayList<Duo>();
+    int MAX_ATTACK_DUO = 3;
+    int MIN_E_ATTACK = 2;
+
+    void attackTask()
+    {
+        Duo d;
+        Post m, s;
+        Iterator<Duo> it = attackDuoList.iterator();
+        
+        while(it.hasNext())
+        {
+            d = it.next();
+            if(ourPostsHash.get(d.masterID) == null || ourPostsHash.get(d.slaveID) == null)
+            {
+                //Remove this duo
+                it.remove();
+
+                if(ourPostsHash.get(d.masterID) != null)
+                {
+                    ourPostsHash.get(d.masterID).targetSet = false;
+                    ourPostsHash.get(d.masterID).role = "Explorer";
+                    explorersList.add(d.masterID);
+                }
+
+                if(ourPostsHash.get(d.slaveID) != null)
+                {
+                    ourPostsHash.get(d.slaveID).targetSet = false;
+                    ourPostsHash.get(d.slaveID).role = "Explorer";
+                    explorersList.add(d.slaveID);
+                }
+            }
+        }
+
+
+        if(explorersList.size() >= MIN_E_ATTACK && attackDuoList.size() < MAX_ATTACK_DUO)
+        {
+            //Create New Duo
+            System.out.printf("[Group6][A] Creating Duo\n");
+            Integer mId, sId;
+            mId = explorersList.remove(0);
+            sId = explorersList.remove(0);
+
+            d = new Duo();
+            d.masterID = mId;
+            d.slaveID = sId;
+
+            attackDuoList.add(d);
+
+            
+            m = ourPostsHash.get(mId);
+            s = ourPostsHash.get(sId);
+
+            m.role = "Attacker";
+            s.role = "Attacker";
+
+            m.target = m.current;
+            s.target = m.current;
+            m.targetSet = true;
+            s.targetSet = true;
+
+            if(m.current.x == s.current.x && m.current.y == s.current.y)
+            {
+                d.ready = true;
+            }
+
+        }
+
+        System.out.printf("[Group6][A] Duo list size: %d\n", attackDuoList.size());
+
+        for(Duo d1:attackDuoList)
+        {
+            m = ourPostsHash.get(d1.masterID);
+            s = ourPostsHash.get(d1.slaveID);
+
+            if(m.current.x == s.current.x && m.current.y == s.current.y)
+            {
+                d1.ready = true;
+            }
+
+            if(d1.ready == false)
+            {
+                m.target = m.current;
+                s.target = m.current;
+
+                m.targetSet = true;
+                s.targetSet = true;          
+            }
+            else
+            {
+                Pair closestOpp = null;
+                double minDistance = 10000;
+                for(Pair opp: oppPosts)
+                {
+                    if(manDistance(opp, m.current) < minDistance)
+                    {
+                        minDistance = manDistance(opp, m.current);
+                        closestOpp = opp;
+                   }
+                }
+                if (closestOpp == null)
+                {
+                    System.out.printf("[Group6][A] Cound not find closestOpp\n");
+
+                    //Return attacker to explorer or do nothing doesnt really matter
+                }
+                else
+                {
+                    System.out.printf("[Group6][A] Attacking Opponent\n");
+
+
+                    m.target = closestOpp;
+                    s.target = m.current;
+                    m.targetSet = true;
+                    s.targetSet = true;
+                    oppPosts.remove(closestOpp);
+                }
+            }
+        }
     }
 }
