@@ -48,7 +48,7 @@ public class Player extends outpost.sim.Player {
     int moveCount = 0;
     int resizeCount = 0;
     
-    int RG_THRESH = 5;
+    int RG_THRESH = 2;
     int PR_THRESH = 6;//Maximum Protector OutPosts
 
     //TODO-Done: Create ourPostsHash, resourceGettersList, explorersList, protectorsList
@@ -572,6 +572,9 @@ public class Player extends outpost.sim.Player {
 
         calculateres();
 
+        System.out.println("posts size: " + ourPosts.size());
+        System.out.println("supported outposts: " + noutpost[my_id]);
+
         if (!(noutpost[my_id] >= ourPosts.size() + RG_THRESH)) {
             assignResourceGetters();
         }
@@ -581,60 +584,87 @@ public class Player extends outpost.sim.Player {
         int nResourceGetters = resourceGettersList.size();
         int sustainableOutposts = noutpost[my_id];
         int nExplorers = explorersList.size();
-
-        int neededOutposts = ourPosts.size() + RG_THRESH;
-        double neededWater = W * (neededOutposts - 1);
-        double neededLand = L * (neededOutposts - 1);
-
-        double currentLand = soil[my_id];
-        double currentWater = water[my_id];
-
-        Pair[] searchRegion = {home[my_id], new Pair(50, 50)};
-
-        int availablePostSize = nResourceGetters + nExplorers; //TODO: Review, This will use up all explorers
-        ArrayList<Pair> targets = new ArrayList<Pair>();
         ArrayList<Post> resourceGetters = getCurrentresourceGetters();
         ArrayList<Post> explorers = getCurrentExplorers();
 
-        for (int nTargets = 1; nTargets <= availablePostSize; nTargets++) {
-            
-            for (Cell c : allCloseCells) {
-                if (c.w_value >= neededWater / nTargets && c.l_value >= neededLand / nTargets) { //TODO: Shouldn't it be neededWater/availablePostSize and neededLand/availablePostSize?
-                    targets.add(c.location);
-                    if (targets.size() >= nTargets) {
-                        break;
+        ArrayList<Pair> targets = new ArrayList<Pair>();
+        int neededOutposts = ourPosts.size() + RG_THRESH + 1;
+
+        while (targets.size() == 0) {
+            neededOutposts--;
+
+            double neededWater = W * (neededOutposts - 1);
+            double neededLand = L * (neededOutposts - 1);
+
+            double currentLand = soil[my_id];
+            double currentWater = water[my_id];
+
+            neededWater -= currentWater;
+            neededLand -= currentLand;
+
+            System.out.println("needed water" + neededWater);
+            System.out.println("needed land" + neededLand);
+
+            Pair[] searchRegion = {home[my_id], new Pair(50, 50)};
+
+            int availablePostSize = nResourceGetters + nExplorers; //TODO: Review, This will use up all explorers
+
+            for (int nTargets = 1; nTargets <= availablePostSize; nTargets++) {
+
+                String neededType;
+
+                if (neededLand > neededWater) {
+                    neededType = "land";
+                } else {
+                    neededType = "water";                
+                }
+                
+                for (Cell c : allCloseCells) {
+
+                    if (c.w_value >= neededWater / nTargets && c.l_value >= neededLand / nTargets && !postWithinDistance(c.location, 2 * r)) {
+                        targets.add(c.location);
+                        System.out.println("adding: " + c.w_value + " " + c.l_value);
+                        neededWater -= c.w_value;
+                        if (targets.size() >= nTargets) {
+                            break;
+                        }                    
                     }
                 }
+                
+                if (targets.size() >= nTargets) {
+                    break;
+                }
             }
-            
-            if (targets.size() >= nTargets) {
-                break;
+
+            System.out.println("Targetsize: " + targets.size());
+            for (Pair p : targets) {
+                System.out.println("Target: " + stringifyPair(p));
             }
         }
 
-        for (int i = 0; i < targets.size(); i++) {
+        // for (int i = 0; i < targets.size(); i++) {
    
-            int bestDist = 1000;
-            Post closestPost = null;
-            for (Post post : resourceGetters) {
-                int d = manDistance(post.current, targets.get(i));
-                if (d < bestDist) {
-                    bestDist = d;
-                    closestPost = post;
-                }
-            }
-            if(closestPost != null)
-            {
-                closestPost.target = targets.get(i);
-                closestPost.targetSet = true;
-                targets.remove(i);
-                resourceGetters.remove(closestPost);
-            }
-        }
+        //     int bestDist = 10000;
+        //     Post closestPost = null;
+        //     for (Post post : resourceGetters) {
+        //         int d = manDistance(post.current, targets.get(i));
+        //         if (d < bestDist) {
+        //             bestDist = d;
+        //             closestPost = post;
+        //         }
+        //     }
+        //     if(closestPost != null)
+        //     {
+        //         closestPost.target = targets.get(i);
+        //         closestPost.targetSet = true;
+        //         targets.remove(i);
+        //         resourceGetters.remove(closestPost);
+        //     }
+        // }
 
         for (int i = 0; i < targets.size(); i++) {
             if (explorersList.size() > 0) {
-                int bestDist = 1000;
+                int bestDist = 10000;
                 Post closestPost = null;
                 for (Post post : explorers) {
                     int d = manDistance(post.current, targets.get(i));
@@ -656,7 +686,15 @@ public class Player extends outpost.sim.Player {
                 }
             }
         }     
+    }
 
+    boolean postWithinDistance(Pair cell, int distance) {
+        for (Post p : ourPosts) {
+            if (p.target == null) continue;
+            if (manDistance(cell, p.target) < distance) return true;
+        }
+
+        return false;
     }
 
     ArrayList<Post> getCurrentExplorers() {

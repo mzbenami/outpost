@@ -2,14 +2,14 @@
 # run from src
 
 MAP=${1:-map0}
-R=${2:-10}
-L=${3:-4}
-W=${4:-1}
+R=${2:-7}
+L=${3:-40}
+W=${4:-10}
 GUI=${5:-true}
-GROUP0=${6:-dumb}
+GROUP0=${6:-group4_nov19}
 GROUP1=${7:-michael}
 GROUP2=${8:-group4_nov19}
-GROUP3=${9:-group5_nov19}
+GROUP3=${9:-group4_nov19}
 T=${10:-100000}
 
 javac outpost/sim/Outpost.java
