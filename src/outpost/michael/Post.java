@@ -11,6 +11,7 @@ public class Post {
 	public int w_value;
 	public int l_value;
 	public int r_value;
+	public String role;
 
 	public boolean targetSet;
 

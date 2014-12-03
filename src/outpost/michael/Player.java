@@ -36,6 +36,8 @@ public class Player extends outpost.sim.Player {
     int mSize = 3;
 
     ArrayList<Cell> allCells;
+    ArrayList<Cell> allCloseCells;
+    ArrayList<Cell> allFarCells;
     ArrayList<Post> ourPosts;
     Pair[] region = new Pair[2];
     int[] rx = {10, -10, -10, 10};
@@ -44,6 +46,10 @@ public class Player extends outpost.sim.Player {
     int[] starty = {0, 0, size -1, size -1};
     int moveCount = 0;
     int resizeCount = 0;
+    int RG_THRESH = 5;
+    double[] water = new double[4];
+    double[] soil = new double[4];
+    int[] noutpost = new int[4];
 
     boolean initDone = false;
 
@@ -474,6 +480,146 @@ public class Player extends outpost.sim.Player {
         }
     }
 
+    void resourceGetterTask() {
+
+        calculateres(water, soil, noutpost);
+
+        if !(noutpost[my_id] >= ourPosts.size() + RG_THRESH) {
+            assignResourceGetters();
+        }
+    }
+
+    void assignResourceGetters() {
+        int nResourceGetters = resourceGettersList.size();
+        int sustainableOutposts = noutpost[my_id];
+        int nExplorers = explorersList.size();
+
+        int neededOutposts = ourPosts.size() + RG_THRESH;
+        int neededWater = W * (neededOutposts - 1);
+        int neededLand = L * (neededOutposts - 1);
+
+        int currentLand = soil[my_id];
+        int currentWater = water[my_id];
+
+        Pair[] searchRegion = {home[my_id], new Pair(50, 50)};
+
+        int availablePostSize = nResourceGetters + nExplorers;
+        ArrayList<Pair> targets = new ArrayList<Pair>();
+        ArrayList<Post> resourceGetters = getCurrentresourceGetters();
+        ArrayList<Post> explorers = getCurrentExplorers();
+
+        for (int nTargets = 1; nTargets <= availablePostSize; nTargets++) {
+            
+            for (Cell c : allCloseCells) {
+                if (c.w_value >= neededWater / nTargets && c.l_value >= neededLand / nTargets) {
+                    targets.add(c.location);
+                    if (targets.size() >= nTargets) {
+                        break;
+                    }
+                }
+            }
+            
+            if (targets.size() >= nTargets) {
+                break;
+            }
+        }
+
+        
+        for (int i = 0; i < targets.size(); i++) {
+   
+            int bestDist = 1000;
+            Post closestPost = null;
+            for (Post post : resourceGetters) {
+                int d = manDistance(post.current, targets.get(i));
+                if (d < bestDist) {
+                    bestDist = d;
+                    closestPost = post;
+                }
+            }
+            closestPost.target = targets.get(i);
+            targets.remove(i);
+            resourceGetters.remove(closestPost);
+        }
+
+        for (int i = 0; i < targets.size(); i++) {
+            if (explorersList.size() > 0) {
+                int bestDist = 1000;
+                Post closestPost = null;
+                for (Post post : explorers) {
+                    int d = manDistance(post.current, targets.get(i));
+                    if (d < bestDist) {
+                        bestDist = d;
+                        closestPost = post;
+                    }
+                }
+                closestPost.target = targets.get(i);
+                targets.remove(i);
+                closestPost.role = "Resource Getter";
+                explorersList.remove(closestPost.id);
+                explorers.remove(closestPost);
+            }
+        }     
+
+    }
+
+    ArrayList<Post> getCurrentExplorers() {
+        
+        ArrayList<Post> currentExplorers = new ArrayList<Post>();
+
+        for (Integer id : explorersList) {
+            Post post = ourPostsHash.get(id);
+            currentExplorers.add(post);
+        }
+
+        return currentExplorers;
+    }
+
+    ArrayList<Post> getCurrentresourceGetters() {
+        
+        ArrayList<Post> currentResourceGetters = new ArrayList<Post>();
+
+        for (Integer id : resourceGettersList) {
+            Post post = ourPostsHash.get(id);
+            currentresourceGetters.add(post);
+        }
+
+        return currentResourceGetters;
+    }
+
+
+    void calculateres() {
+        //System.out.println("calculate resouce");
+        for (int i=0; i<4; i++) {
+            water[i] =0.0;
+            soil[i] =0.0;
+        }
+        for (int i=0; i<size*size; i++) {
+            if (grid[i].ownerlist.size() == 1) {
+                if (grid[i].water) {
+                    water[grid[i].ownerlist.get(0).x]++;
+                }
+                else {
+                    soil[grid[i].ownerlist.get(0).x]++;
+                }
+            }
+            else if (grid[i].ownerlist.size() > 1){
+                for (int f=0; f<grid[i].ownerlist.size(); f++) {
+                    if (grid[i].water) {
+                        water[grid[i].ownerlist.get(f).x]=water[grid[i].ownerlist.get(f).x]+1/grid[i].ownerlist.size();
+                    }
+                    else {
+                        soil[grid[i].ownerlist.get(f).x]=soil[grid[i].ownerlist.get(f).x]+1/grid[i].ownerlist.size();
+                    }
+                }
+
+            }
+        }
+        for (int i=0; i<4; i++) {
+            noutpost[i] = (int) Math.min(soil[i]/L, water[i]/W)+1;
+        }
+
+    }
+
     /* Calculate the water value and land value for every cell */
     void calcCellValues() {
 
@@ -491,13 +637,13 @@ public class Player extends outpost.sim.Player {
             for (Pair p : diamond) {
 
                 if (PairtoPoint(p).water) {
-                    cell.w_value += L; 
+                    cell.w_value += 1; 
                 } else {
-                    cell.l_value += W;
+                    cell.l_value += 1;
                 }      
             }
         
-            cell.r_value = Math.min(cell.w_value, cell.l_value);
+            cell.r_value = Math.min(cell.w_value / W, cell.l_value / L);
         }
         Collections.sort(allCells);
     }
@@ -507,6 +653,27 @@ public class Player extends outpost.sim.Player {
         for (int i = 0; i < grid.length; i++) {
             allCells.add(new Cell(PointtoPair(grid[i])));
         }
+
+        allCloseCells = new ArrayList<Cell>();
+        allCloseCells.addAll(allCells);
+
+        Collections.sort(allCloseCells, new Comparator<Cell>() {
+            public int compare(Cell c1, Cell c2) {
+                if (manDistance(c1.location, home[my_id]) < manDistance(c2.location, home[my_id])) {
+                    return -1;
+                }
+                
+                if (manDistance(c1.location, home[my_id]) > manDistance(c2.location, home[my_id])) {
+                    return 1;
+                }
+
+                return 0;
+            }
+        });
+
+        allFarCells = new ArrayList<Cell>();
+        allFarCells.addAll(allCloseCells);
+        Collections.reverse(allFarCells);
     }
 
     ArrayList<Pair> diamondFromPair(Pair a, int r) {
