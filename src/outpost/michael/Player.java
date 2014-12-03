@@ -161,6 +161,12 @@ public class Player extends outpost.sim.Player {
 
     public Pair findNextMovePos(Pair current, Pair target)
     {
+
+        Point ptt = PairtoPoint(target);
+        if(ptt.water == true)
+        {
+            return new Pair(current);
+        }
      //   System.out.printf("[Group6][LOG] Finding path (%d, %d) -> (%d, %d)\n", current.x, current.y, target.x, target.y);
         for (int i = 0; i < size; ++i)
         {
@@ -315,6 +321,12 @@ public class Player extends outpost.sim.Player {
         totalCpuTime += timeTaken; 
 
       //  System.out.printf("[Group6][END] Cpu Time, This iteration: %d ms, Total: %d ms\n", timeTaken, totalCpuTime);
+
+        System.out.printf("[Group6] Blank\n");
+        printOupost();
+
+        System.out.printf("[Group6] Blank\n");
+        System.out.printf("[Group6] Blank\n");
 
         return nextlist;
     
