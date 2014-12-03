@@ -2,7 +2,6 @@ package outpost.michael;
 
 import java.util.*;
 
-import outpost.ritu.Post;
 import outpost.sim.Pair;
 import outpost.sim.Point;
 import outpost.sim.movePair;
